@@ -5,7 +5,7 @@ from pynput.mouse import Controller
 from pynput.keyboard import Listener, Key
 from dataclasses import dataclass
 import threading
-from pynput.keyboard import Listener, Key
+# from pynput.keyboard import Listener, Key
 
 
 #%%
@@ -30,8 +30,9 @@ class MouseControlParams:
             5: 'down',
         }
 
-    def get_mode_string_value(self, whatmode: int) -> str:
-        return self.int2str.get(whatmode, 'unknown')
+    def get_mode_string_value(self):
+        return self.int2str.get(self.mode, 'unknown')
+    
     
 @dataclass
 class trigger_signals:
@@ -56,30 +57,26 @@ class MouseController:
         self.params = params
         self.move_step = move_step
         self.current_x, self.current_y = mouse.position
-        self.current_mode: str = params.get_mode_string_value(self.params.mode)
+        self.current_mode: str = params.get_mode_string_value()
         self.signals = signals
         # self.currrent_mode: str = params.get_mode_string_value(self.params.mode)
-    def move_mouse(self): #maybe include every params in this function
+    def move_mouse(self, tmp_mode: int): #maybe include every params in this function
+        tmp_mode = self.current_mode
         if not self.params.power : 
-
             print("Power is currently off,")
             print("Please turn on the power to continue")
             return
         
         elif self.current_mode == 'left':
-            
             self.current_x -= self.move_step
             
-        elif self.currrent_mode == 'right':
-            
+        elif self.current_mode == 'right':
             self.current_x += self.move_step
         
-        elif self.currrent_mode == 'up':
-            
+        elif self.current_mode == 'up':
             self.current_y -= self.move_step
         
-        elif self.currrent_mode == 'down':
-            
+        elif self.current_mode == 'down':
             self.current_y += self.move_step
             
         # Move the mouse to the new position
@@ -99,7 +96,7 @@ class MouseController:
                 self.params.mode = 1
             if self.params.mode == 1:
                 self.params.mode = 0
-            self.currrent_mode = self.params.get_mode_string_value(self.params.mode)
+            self.currrent_mode = self.params.get_mode_string_value()
             print(f'Mouse mode is now {self.currrent_mode}')
         else :
             if self.params.power:
@@ -113,7 +110,7 @@ class MouseController:
                         self.params.mode = 4
                     if self.signals.down_signal == 10:
                         self.params.mode = 5
-                self.currrent_mode = self.params.get_mode_string_value(self.params.mode)
+                self.currrent_mode = self.params.get_mode_string_value()
                     
     #function to control mouse movement mode
 '''
@@ -134,27 +131,27 @@ every signal is :
 #%%
 # Example usage
 # @staticmethod
-def on_press(key, pseudo_signals: trigger_signals, self) :
-    self.psuedo_signals = pseudo_signals
+def on_press(key) :
     try:
         if key.char == 'a':
-            self.pseudo_signals.left_signal = 10
-            return self.psuedo_signals
+            controller.signals.left_signal = 10
+            # return self.psuedo_signals
         elif key.char == 'd':
-            self.pseudo_signals.right_signal = 10
-            return self.psuedo_signals
+            controller.signals.right_signal = 10
+            # return self.psuedo_signals
         elif key.char == 'w':
-            self.pseudo_signals.up_signal = 10
-            return self.psuedo_signals
+            controller.signals.up_signal = 10
+            # return self.psuedo_signals
         elif key.char == 's':
-            self.pseudo_signals.down_signal = 10
-            return self.psuedo_signals
+            controller.signals.down_signal = 10
+            # return self.psuedo_signals
         elif key.char == 'p':
-            self.pseudo_signals.grind = 10
-            return self.psuedo_signals
+            controller.signals.grind = 10
+            # return self.psuedo_signals
         elif key.char == 'o':
-            self.pseudo_signals.left_blink = 10
-            return self.psuedo_signals
+            controller.signals.left_blink = 10
+            # return self.psuedo_signals
+        
     except AttributeError:
         pass
     
