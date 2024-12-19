@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "final-project-g7"
+version = "0.1.0"
+description = ""
+authors = ["halo"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.3"
+numpy = "^2.1.3"
+ipykernel = "^6.29.5"
+nidaqmx = "^1.0.2"
+matplotlib = "^3.9.2"
+tcl = "^0.2"
+pyvisa = "^1.14.1"
+mouse = "^0.7.1"
+pynput = "^1.7.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
