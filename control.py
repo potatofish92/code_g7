@@ -94,7 +94,7 @@ class MouseController:
             while self.params.power:
                 self.position.update(-self.move_step, 0)
                 time.sleep(0.1)
-                
+
         elif self.params.mode == 3:  # right
             while self.params.power:
                 self.position.update(self.move_step, 0)
@@ -113,7 +113,6 @@ class MouseController:
         # Print the current position
         print(f"Mouse moved to {self.mouse.position}")
 
-
     def power_switch(self, signals: Triggers):
         if signals.grind:
             self.params.power = not self.params.power
@@ -124,37 +123,36 @@ class MouseController:
     def mouse_mode_control(self, signals: Triggers):
         if self.params.power:
             # change to left
-            if self.params.mode == 0 and signals.left_signal :
+            if self.params.mode == 0 and signals.left_signal:
                 self.params.mode = 2
             # change to right
-            elif self.params.mode == 0 and signals.right_signal :
+            elif self.params.mode == 0 and signals.right_signal:
                 self.params.mode = 3
             # change to up
-            elif self.params.mode == 1 and signals.right_signal :
+            elif self.params.mode == 1 and signals.right_signal:
                 self.params.mode = 4
             # change to down
-            elif self.params.mode == 1 and signals.left_signal :
+            elif self.params.mode == 1 and signals.left_signal:
                 self.params.mode = 5
-           
+
             # error message
             if signals.left_blink:
                 print("Please turn off the power to continue changing the mode")
                 self.current_power: str = "on" if self.params.power else "off"
                 print(f"MouseController is now {self.current_power}")
-            
-            #broadcast the mode
+
+            # broadcast the mode
             self.current_mode = self.params.get_mode_string_value(self)
             print(f"MouseController is now in {self.current_mode} mode")
 
         else:
             if self.params.mode == 2 or self.params.mode == 3:
-                    self.params.mode = 0
+                self.params.mode = 0
             elif self.params.mode == 4 or self.params.mode == 5:
-                self.params.mode = 1       
-            
+                self.params.mode = 1
+
             if self.signals.left_blink:
                 self.params.mode = 1 if self.params.mode == 0 else 0
-            
 
             if self.signals.left_signal or self.signals.right_signal:
                 print("Please turn on the power to do the movement")
@@ -173,14 +171,24 @@ def main():
 
     def on_press(key):
         try:
-            if key.char == 'a':
+            if key.char == "a":
                 controller.params.mode = 2  # left
-            elif key.char == 'd':
+            elif key.char == "d":
                 controller.params.mode = 3  # right
-            elif key.char == 'w':
+            elif key.char == "w":
                 controller.params.mode = 4  # up
-            elif key.char == 's':
+            elif key.char == "s":
                 controller.params.mode = 5  # down
+            elif key.char == "p":
+                signals.grind = 1
+            elif key.char == "q":
+                signals.left_blink = 1
+            elif key.char == "o":
+                signals.right_blink = 1
+            elif key.char == "l":
+                signals.left_signal = 1
+            elif key.char == "r":
+                signals.right_signal = 1
         except AttributeError:
             pass
 
@@ -191,10 +199,11 @@ def main():
 
     with Listener(on_press=on_press, on_release=on_release) as listener:
         while controller.params.power:
-            controller.update_position()
             controller.mouse_mode_control()
+            controller.update_position()
             time.sleep(0.1)
         listener.join()
+
 
 if __name__ == "__main__":
     main()
