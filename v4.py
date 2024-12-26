@@ -82,10 +82,10 @@ try:
             signals.left_signal = 1 if data["Dev2/ai4"] >= 5 else 0
             signals.right_signal = 1 if data["Dev2/ai3"] >= 5 else 0
             signals.left_blink = (
-                1 if data["Dev2/ai2"] >= 5 and data["Dev2/ai4"] < 5 else 0
+                1 if data["Dev2/ai2"] > 5 and data["Dev2/ai4"] < 5 else 0
             )
             signals.right_blink = (
-                1 if data["Dev2/ai1"] >= 5 and data["Dev2/ai3"] < 5 else 0
+                1 if data["Dev2/ai1"] > 5 and data["Dev2/ai3"] < 5 else 0
             )
 
             # print(signals.collect_data())
