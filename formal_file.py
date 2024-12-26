@@ -1,4 +1,3 @@
-# %%
 import time
 from pynput.mouse import Controller
 from time import sleep
@@ -6,15 +5,33 @@ from pynput.keyboard import Listener, Key
 from dataclasses import dataclass
 import nidaqmx
 from nidaqmx.constants import AcquisitionType, TerminalConfiguration
-import matplotlib.pyplot as plt
 
+# import matplotlib.pyplot as plt
 
-# %%
-# Create a mouse controller object
 mouse = Controller()
 
 
-# %%
+@dataclass
+class Triggers:
+    left_blink: int = 0
+    right_blink: int = 0
+    grind: int = 0
+    left_signal: int = 0
+    right_signal: int = 0
+
+    def collect_data(self):
+        return {
+            "left_blink": self.left_blink,
+            "right_blink": self.right_blink,
+            "grind": self.grind,
+            "left_signal": self.left_signal,
+            "right_signal": self.right_signal,
+        }
+
+    def find_variable(self, variable_name):
+        return getattr(self, variable_name, None)
+
+
 # finish params package
 @dataclass
 class Params:
@@ -62,7 +79,7 @@ class Triggers:
 
 
 class Position:
-    def __init__(self, x=959, y=539):
+    def __init__(self, x=mouse.position[0], y=mouse.position[1]):
         self.x = x
         self.y = y
 
@@ -71,10 +88,8 @@ class Position:
         self.y += dy
 
 
-# %%
-##TODO : Add power switch function
 class MouseController:
-    def __init__(self, signals: Triggers, move_step: float = 2.0):
+    def __init__(self, signals: Triggers, move_step: int = 2):
         self.params = Params()
         self.signals = signals
         self.position = Position(*mouse.position)
@@ -83,6 +98,9 @@ class MouseController:
         self.current_mode = self.params.mode2str.get(self.params.mode, "unknown")
         print(f"Initial status of MouseController: {self.current_mode}")
         print(f"Initial power status of MouseController: {self.current_power}")
+
+    def update_signals(self, signals: Triggers):
+        self.signals = signals
 
     # movement corresponding to the mode
     def update_position(self):
@@ -95,7 +113,6 @@ class MouseController:
             while self.params.power:
                 self.position.update(-self.move_step, 0)
                 time.sleep(0.1)
-
         elif self.params.mode == 3:  # right
             while self.params.power:
                 self.position.update(self.move_step, 0)
@@ -110,40 +127,39 @@ class MouseController:
                 time.sleep(0.1)
 
         # Move the mouse to the new position
-        self.mouse.position = (self.position.x, self.position.y)
+        mouse.position = (self.position.x, self.position.y)
         # Print the current position
-        print(f"Mouse moved to {self.mouse.position}")
+        print(f"Mouse moved to {mouse.position}")
 
-    def power_switch(self, signals: Triggers):
-        if signals.grind:
+    def power_switch(self):
+        if self.signals.grind:
             self.params.power = not self.params.power
         self.current_power: str = "on" if self.params.power else "off"
         print(f"Power is now {self.current_power}")
 
-    # TODO: add the function of controlling the mouse params
     def mouse_mode_control(self, signals: Triggers):
         if self.params.power:
             # change to left
-            if self.params.mode == 0 and signals.left_signal:
+            if self.params.mode == 0 and self.signals.left_signal:
                 self.params.mode = 2
             # change to right
-            elif self.params.mode == 0 and signals.right_signal:
+            elif self.params.mode == 0 and self.signals.right_signal:
                 self.params.mode = 3
             # change to up
-            elif self.params.mode == 1 and signals.right_signal:
+            elif self.params.mode == 1 and self.signals.right_signal:
                 self.params.mode = 4
             # change to down
-            elif self.params.mode == 1 and signals.left_signal:
+            elif self.params.mode == 1 and self.signals.left_signal:
                 self.params.mode = 5
 
             # error message
-            if signals.left_blink:
+            if self.signals.left_blink:
                 print("Please turn off the power to continue changing the mode")
                 self.current_power: str = "on" if self.params.power else "off"
                 print(f"MouseController is now {self.current_power}")
 
             # broadcast the mode
-            self.current_mode = self.params.get_mode_string_value(self)
+            self.current_mode = self.params.mode2str.get(self.params.mode, "unknown")
             print(f"MouseController is now in {self.current_mode} mode")
 
         else:
@@ -166,62 +182,72 @@ class MouseController:
     # function to control mouse movement mode
 
 
+# 設置數據讀取的參數
+SAMPLING_RATE = 1  # 每秒更新次數
+CHANNELS = ["Dev2/ai0", "Dev2/ai1", "Dev2/ai2", "Dev2/ai3", "Dev2/ai4"]  # 要讀取的通道
+BUFFER_SIZE = 1
+
+# 將數據映射到對應的信號
+TRIGGER_SIGNALS = {
+    "Dev2/ai0": "grind",
+    "Dev2/ai1": "left_blink",
+    "Dev2/ai2": "right_blink",
+    "Dev2/ai3": "left_signal",
+    "Dev2/ai4": "right_signal",
+}
+
+
 def main():
     signals = Triggers()
-    controller = MouseController(signals=signals, move_step=10.0)
+    MouseController = MouseController()
 
-    def on_press(key):
-        try:
-            if key.char == "a":
-                print(f"You pressed {key.char}")
-                controller.params.mode = 2  # left
-            elif key.char == "d":
-                print(f"You pressed {key.char}")
-                controller.params.mode = 3  # right
-            elif key.char == "w":
-                print(f"You pressed {key.char}")
-                controller.params.mode = 4  # up
-            elif key.char == "s":
-                print(f"You pressed {key.char}")
-                controller.params.mode = 5  # down
-            elif key.char == "p":
-                print(f"You pressed {key.char}")
-                signals.grind = 1
-            elif key.char == "q":
-                print(f"You pressed {key.char}")
-                signals.left_blink = 1
-            elif key.char == "o":
-                print(f"You pressed {key.char}")
-                signals.right_blink = 1
-            elif key.char == "l":
-                print(f"You pressed {key.char}")
-                signals.left_signal = 1
-            elif key.char == "r":
-                print(f"You pressed {key.char}")
-                signals.right_signal = 1
-            else:
-                sleep(1)
-                signals.grind = 0
-                signals.left_blink = 0
-                signals.right_blink = 0
-                signals.left_signal = 0
-                signals.right_signal = 0
+    try:
+        with nidaqmx.Task() as task:
+            # 添加通道到任務中
+            for channel in CHANNELS:
+                task.ai_channels.add_ai_voltage_chan(
+                    channel,
+                    terminal_config=TerminalConfiguration.DEFAULT,
+                    min_val=-10.0,
+                    max_val=10.0,
+                )
+            # 設置採集參數
+            task.timing.cfg_samp_clk_timing(
+                SAMPLING_RATE, sample_mode=AcquisitionType.CONTINUOUS
+            )
 
-        except AttributeError:
-            pass
+            while True:
+                data1 = task.read(number_of_samples_per_channel=BUFFER_SIZE)
+                data = {channel: data1[i] for i, channel in enumerate(CHANNELS)}
 
-    def on_release(key):
-        if key == Key.esc:
-            controller.params.power = False
-            return False
+                # 更新信號
+                for channel, signal_name in TRIGGER_SIGNALS.items():
+                    setattr(signals, signal_name, data[channel][0])
 
-    with Listener(on_press=on_press, on_release=on_release) as listener:
-        while controller.params.power:
-            controller.power_switch(signals)
-            controller.mouse_mode_control(signals)
-            controller.update_position()
-            time.sleep(0.1)
-        listener.join()
+                # 更新信號狀態
+                signals.grind = 1 if data["Dev2/ai0"][-1] >= 5 else 0
+                signals.left_signal = 1 if data["Dev2/ai3"][-1] >= 5 else 0
+                signals.right_signal = 1 if data["Dev2/ai4"][-1] >= 5 else 0
+                signals.left_blink = (
+                    1 if data["Dev2/ai1"][-1] >= 5 and data["Dev2/ai3"][-1] < 5 else 0
+                )
+                signals.right_blink = (
+                    1 if data["Dev2/ai2"][-1] >= 5 and data["Dev2/ai4"][-1] < 5 else 0
+                )
+
+                print(data)
+                print(signals.collect_data())
+
+                MouseController.update_signals(signals)
+                MouseController.mouse_mode_control()
+                MouseController.update_position()
+
+    except KeyboardInterrupt:
+        print("Acquisition stopped by user.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        print("Task resources released.")
 
 
 if __name__ == "__main__":
