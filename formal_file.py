@@ -59,11 +59,11 @@ class Params:
 
 @dataclass
 class Triggers:
-    left_blink: int = 0
-    right_blink: int = 0
-    grind: int = 0
-    left_signal: int = 0
-    right_signal: int = 0
+    left_blink: bool = 0
+    right_blink: bool = 0
+    grind: bool = 0
+    left_signal: bool = 0
+    right_signal: bool = 0
 
     def collect_data(self):
         return {
@@ -137,7 +137,7 @@ class MouseController:
         self.current_power: str = "on" if self.params.power else "off"
         print(f"Power is now {self.current_power}")
 
-    def mouse_mode_control(self, signals: Triggers):
+    def mouse_mode_control(self):
         if self.params.power:
             # change to left
             if self.params.mode == 0 and self.signals.left_signal:
@@ -199,7 +199,7 @@ TRIGGER_SIGNALS = {
 
 def main():
     signals = Triggers()
-    MouseController = MouseController()
+    MouseCon = MouseController(signals)
 
     try:
         with nidaqmx.Task() as task:
@@ -238,9 +238,9 @@ def main():
                 print(data)
                 print(signals.collect_data())
 
-                MouseController.update_signals(signals)
-                MouseController.mouse_mode_control()
-                MouseController.update_position()
+                MouseCon.update_signals(signals)
+                MouseCon.mouse_mode_control()
+                MouseCon.update_position()
 
     except KeyboardInterrupt:
         print("Acquisition stopped by user.")
