@@ -77,30 +77,12 @@ try:
                 setattr(signals, signal_name, channel)
 
             # Update the signals based on the channel data
-            if data["grind"] >= 5:
-                signals.grind = 1
-            else:
-                signals.grind = 0
 
-            if data["L_M"] >= 5:
-                signals.left_signal = 1
-            else:
-                signals.left_signal = 0
-
-            if data["R_M"] >= 5:
-                signals.right_signal = 1
-            else:
-                signals.right_signal = 0
-
-            if data["L_M_B"] >= 5 and data["L_M"] < 5:
-                signals.left_blink = 1
-            else:
-                signals.left_blink = 0
-
-            if data["R_M_B"] >= 5 and data["R_M"] < 5:
-                signals.right_blink = 1
-            else:
-                signals.right_blink = 0
+            signals.grind = 1 if data["grind"] >= 5 else 0
+            signals.left_signal = 1 if data["L_M"] >= 5 else 0
+            signals.right_signal = 1 if data["R_M"] >= 5 else 0
+            signals.left_blink = 1 if data["L_M_B"] >= 5 and data["L_M"] < 5 else 0
+            signals.right_blink = 1 if data["R_M_B"] >= 5 and data["R_M"] < 5 else 0
 
             # print(signals.collect_data())
             print(data)
