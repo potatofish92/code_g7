@@ -1,13 +1,14 @@
 import nidaqmx
 from nidaqmx.constants import AcquisitionType, TerminalConfiguration
-import matplotlib.pyplot as plt
-
-# from matplotlib.animation import FuncAnimation
 from dataclasses import dataclass
 
+# 設置數據讀取的參數
+SAMPLING_RATE = 60  # 每秒更新次數
+CHANNELS = ["Dev2/ai0", "Dev2/ai1", "Dev2/ai2", "Dev2/ai3", "Dev2/ai4"]  # 要讀取的通道
+BUFFER_SIZE = 1
 
-# map the data into the corresponding signal
-trigger_signals = {
+# 將數據映射到對應的信號
+TRIGGER_SIGNALS = {
     "Dev2/ai0": "grind",
     "Dev2/ai1": "left_blink",
     "Dev2/ai2": "right_blink",
@@ -15,24 +16,15 @@ trigger_signals = {
     "Dev2/ai4": "right_signal",
 }
 
-# 設置數據讀取的參數
-sampling_rate = 60  # update times per second
-channels = ["grind", "R_M_B", "L_M_B", "R_M", "L_M"]  # 要讀取的通道
-#             grind,   left_blink, right_blink, left_signal, right_signal
-
-BUFFER_SIZE = 1
-
 
 @dataclass
 class Triggers:
-    def __init__(self):
-        self.left_blink: bool = 0
-        self.right_blink: bool = 0
-        self.grind: bool = 0
-        self.left_signal: bool = 0
-        self.right_signal: bool = 0
+    left_blink: int = 0
+    right_blink: int = 0
+    grind: int = 0
+    left_signal: int = 0
+    right_signal: int = 0
 
-    # define the function to output the datas respectively
     def collect_data(self):
         return {
             "left_blink": self.left_blink,
@@ -46,83 +38,53 @@ class Triggers:
         return getattr(self, variable_name, None)
 
 
-# 創建任務
-# task = nidaqmx.Task()
-signals = Triggers()
+def main():
+    signals = Triggers()
 
-try:
-    with nidaqmx.Task() as task:
-        # 添加通道到任務中
-        for channel in channels:
-            task.ai_channels.add_ai_voltage_chan(
-                channel,
-                terminal_config=TerminalConfiguration.DEFAULT,
-                min_val=-10.0,
-                max_val=10.0,
+    try:
+        with nidaqmx.Task() as task:
+            # 添加通道到任務中
+            for channel in CHANNELS:
+                task.ai_channels.add_ai_voltage_chan(
+                    channel,
+                    terminal_config=TerminalConfiguration.DEFAULT,
+                    min_val=-10.0,
+                    max_val=10.0,
+                )
+            # 設置採集參數
+            task.timing.cfg_samp_clk_timing(
+                SAMPLING_RATE, sample_mode=AcquisitionType.CONTINUOUS
             )
-        # 設置採集參數
-        task.timing.cfg_samp_clk_timing(
-            sampling_rate, sample_mode=AcquisitionType.CONTINUOUS
-        )
-        while True:
-            data1 = task.read(number_of_samples_per_channel=BUFFER_SIZE)
 
-            data = {channel: [] for channel in channels}
+            while True:
+                data1 = task.read(number_of_samples_per_channel=BUFFER_SIZE)
+                data = {channel: data1[i] for i, channel in enumerate(CHANNELS)}
 
-            for i, channel in enumerate(channels):
-                data[channel] = data1[i]
+                # 更新信號
+                for channel, signal_name in TRIGGER_SIGNALS.items():
+                    setattr(signals, signal_name, data[channel][0])
 
-            # Update the signals based on the channel data
-            for channel, signal_name in trigger_signals.items():
-                setattr(signals, signal_name, channel)
+                # 更新信號狀態
+                signals.grind = 1 if data["Dev2/ai0"] >= 5 else 0
+                signals.left_signal = 1 if data["Dev2/ai3"] >= 5 else 0
+                signals.right_signal = 1 if data["Dev2/ai4"] >= 5 else 0
+                signals.left_blink = (
+                    1 if data["Dev2/ai1"] >= 5 and data["Dev2/ai3"] < 5 else 0
+                )
+                signals.right_blink = (
+                    1 if data["Dev2/ai2"] >= 5 and data["Dev2/ai4"] < 5 else 0
+                )
 
-            # Update the signals based on the channel data
+                print(data)
+                print(signals.collect_data())
 
-            signals.grind = 1 if data["grind"] >= 5 else 0
-            signals.left_signal = 1 if data["L_M"] >= 5 else 0
-            signals.right_signal = 1 if data["R_M"] >= 5 else 0
-            signals.left_blink = 1 if data["L_M_B"] >= 5 and data["L_M"] < 5 else 0
-            signals.right_blink = 1 if data["R_M_B"] >= 5 and data["R_M"] < 5 else 0
-
-            # print(signals.collect_data())
-            print(data)
-            print(signals.collect_data())
-            # 初始化數據存儲
-            # store the data in a dictionary called data with each channel's name as the key to access the data
-
-
-except KeyboardInterrupt:
-    print("Acquisition stopped by user.")
-
-except Exception as e:
-    print(f"An error occurred: {e}")
-finally:
-    print("Task resources released.")
+    except KeyboardInterrupt:
+        print("Acquisition stopped by user.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        print("Task resources released.")
 
 
-# 設置繪圖
-# fig, axs = plt.subplots(len(channels), 1, figsize=(10, 6))
-# lines = {channel: ax.plot([], [], label=channel)[0] for channel, ax in zip(channels, axs)}
-# for ax in axs:
-#     ax.set_xlim(0, 100)  # 初始 x 軸範圍
-#     ax.set_ylim(-10, 10)  # y 軸範圍
-#     ax.legend() # 顯示圖例
-
-# # 更新繪圖的函數
-# def update():
-#     samples = task.read(number_of_samples_per_channel=sampling_rate)
-#     for i, channel in enumerate(channels):
-#         data[channel].extend(samples[i])
-#         lines[channel].set_data(range(len(data[channel])), data[channel])
-
-#     # 動態調整 x 軸範圍
-#     for ax in axs:
-#         ax.set_xlim(max(0, len(data[channels[0]]) - 100), len(data[channels[0]]))
-
-#     return lines.values()
-
-# # 創建動畫
-# ani = FuncAnimation(fig, update, interval=100)
-
-# # 開始繪圖
-# plt.show()
+if __name__ == "__main__":
+    main()
