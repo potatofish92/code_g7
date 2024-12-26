@@ -172,23 +172,39 @@ def main():
     def on_press(key):
         try:
             if key.char == "a":
+                print(f"You pressed {key.char}")
                 controller.params.mode = 2  # left
             elif key.char == "d":
+                print(f"You pressed {key.char}")
                 controller.params.mode = 3  # right
             elif key.char == "w":
+                print(f"You pressed {key.char}")
                 controller.params.mode = 4  # up
             elif key.char == "s":
+                print(f"You pressed {key.char}")
                 controller.params.mode = 5  # down
             elif key.char == "p":
+                print(f"You pressed {key.char}")
                 signals.grind = 1
             elif key.char == "q":
+                print(f"You pressed {key.char}")
                 signals.left_blink = 1
             elif key.char == "o":
+                print(f"You pressed {key.char}")
                 signals.right_blink = 1
             elif key.char == "l":
+                print(f"You pressed {key.char}")
                 signals.left_signal = 1
             elif key.char == "r":
+                print(f"You pressed {key.char}")
                 signals.right_signal = 1
+            else:
+                signals.grind = 0
+                signals.left_blink = 0
+                signals.right_blink = 0
+                signals.left_signal = 0
+                signals.right_signal = 0
+
         except AttributeError:
             pass
 
@@ -199,7 +215,8 @@ def main():
 
     with Listener(on_press=on_press, on_release=on_release) as listener:
         while controller.params.power:
-            controller.mouse_mode_control()
+            controller.power_switch(signals)
+            controller.mouse_mode_control(signals)
             controller.update_position()
             time.sleep(0.1)
         listener.join()
