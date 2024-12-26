@@ -17,8 +17,8 @@ trigger_signals = {
 
 # 設置數據讀取的參數
 sampling_rate = 60  # update times per second
-channels = ["grind", "R_M_B", "L_M_B", "R_M", "L_M"]  # 要讀取的通道
-#             grind,   left_blink, right_blink, left_signal, right_signal
+channels = ["Dev2/ai0", "Dev2/ai1", "Dev2/ai2", "Dev2/ai3", "Dev2/ai4"]  # 要讀取的通道
+#             grind,      R_M_B,      L_M_B,       R_M,         L_M
 
 BUFFER_SIZE = 1
 
@@ -78,11 +78,11 @@ try:
 
             # Update the signals based on the channel data
 
-            signals.grind = 1 if data["grind"] >= 5 else 0
-            signals.left_signal = 1 if data["L_M"] >= 5 else 0
-            signals.right_signal = 1 if data["R_M"] >= 5 else 0
-            signals.left_blink = 1 if data["L_M_B"] >= 5 and data["L_M"] < 5 else 0
-            signals.right_blink = 1 if data["R_M_B"] >= 5 and data["R_M"] < 5 else 0
+            signals.grind = 1 if data["Dev2/ai0"] >= 5 else 0
+            signals.left_signal = 1 if data["Dev2/ai4"] >= 5 else 0
+            signals.right_signal = 1 if data["Dev2/ai3"] >= 5 else 0
+            signals.left_blink = 1 if data["Dev2/ai2"] >= 5 and data["Dev2/ai4"] < 5 else 0
+            signals.right_blink = 1 if data["Dev2/ai1"] >= 5 and data["Dev2/ai3"] < 5 else 0
 
             # print(signals.collect_data())
             print(data)
