@@ -16,7 +16,8 @@ try:
             max_val=10.0,
         )
         task.timing.cfg_samp_clk_timing(
-            rate=SAMPLE_RATE, sample_mode=AcquisitionType.CONTINUOUS
+            rate=SAMPLE_RATE, 
+            sample_mode=AcquisitionType.CONTINUOUS
         )
 
         print("Starting real-time acquisition... Press Ctrl+C to stop.")
