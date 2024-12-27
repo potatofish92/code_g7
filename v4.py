@@ -3,7 +3,8 @@ from nidaqmx.constants import AcquisitionType, TerminalConfiguration
 from dataclasses import dataclass
 
 # 設置數據讀取的參數
-SAMPLING_RATE = 1000  # 每秒更新次數
+SAMPLING_RATE = 60  # 每秒更新次數
+
 CHANNELS = ["Dev2/ai0", "Dev2/ai1", "Dev2/ai2", "Dev2/ai3", "Dev2/ai4"]  # 要讀取的通道
 BUFFER_SIZE = 1
 
@@ -19,11 +20,13 @@ TRIGGER_SIGNALS = {
 
 @dataclass
 class Triggers:
-    left_blink: bool = 0
-    right_blink: bool = 0
-    grind: bool = 0
-    left_signal: bool = 0
-    right_signal: bool = 0
+
+    left_blink: int = 0
+    right_blink: int = 0
+    grind: int = 0
+    left_signal: int = 0
+    right_signal: int = 0
+
 
     def collect_data(self):
         return {
@@ -65,6 +68,7 @@ def main():
                     setattr(signals, signal_name, data[channel][0])
 
                 # 更新信號狀態
+
                 signals.grind = 1 if data["Dev2/ai0"][-1] >= 5 else 0
                 signals.left_signal = 1 if data["Dev2/ai3"][-1] >= 5 else 0
                 signals.right_signal = 1 if data["Dev2/ai4"][-1] >= 5 else 0
@@ -87,4 +91,6 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
+
