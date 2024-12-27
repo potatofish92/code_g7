@@ -1,5 +1,5 @@
 import time
-from pynput.mouse import Controller
+from pynput.mouse import Controller, Button
 from time import sleep
 from pynput.keyboard import Listener, Key
 from dataclasses import dataclass
@@ -101,10 +101,11 @@ class MouseController:
 
     def update_signals(self, signals: Triggers):
         self.signals = signals
-
+    
     # movement corresponding to the mode
     def update_position(self, signals: Triggers):
         if not self.params.power:
+            
             print("Power is currently off,")
             print("Please turn on the power to continue")
         else:
@@ -244,6 +245,7 @@ class MouseController:
             print(f"MouseController is now in {self.current_mode} mode")
 
         else:
+            
             if self.signals.left_blink:
                 self.params.mode = 1 if self.params.mode == 0 else 0
                 time.sleep(1)
@@ -282,7 +284,11 @@ TRIGGER_SIGNALS = {
 def main():
     signals = Triggers()
     MouseCon = MouseController(signals, move_step=5)
-
+    def left_click(signals: Triggers):
+        if signals.right_blink:
+            mouse.click(Button.left, 1)
+            print("left click")
+        # mouse.click(Button.left, 1)
     try:
         with nidaqmx.Task() as task:
             # 添加通道到任務中
@@ -310,21 +316,22 @@ def main():
                 data["Dev2/ai1"][-1]=data["Dev2/ai3"][-1]
                 data["Dev2/ai2"][-1]=data["Dev2/ai4"][-1]
                 signals.grind = 1 if data["Dev2/ai0"][-1] >= 5 else 0
-                signals.left_signal = 1 if data["Dev2/ai3"][-1] >= 5 else 0
-                signals.right_signal = 1 if data["Dev2/ai4"][-1] >= 5 else 0
-                signals.left_blink = (
+                signals.left_blink = 1 if data["Dev2/ai3"][-1] >= 5 else 0
+                signals.right_blink = 1 if data["Dev2/ai4"][-1] >= 5 else 0
+                signals.left_signal = (
                     1 if data["Dev2/ai1"][-1] >= 5 else 0
                 )
-                signals.right_blink = (
+                signals.right_signal = (
                     1 if data["Dev2/ai2"][-1] >= 5 else 0
                 )
 
-                print(data)
-                print(signals.collect_data())
+                # print(data)
+                # print(signals.collect_data())
                 MouseCon.update_signals(signals)
                 MouseCon.power_switch()
                 MouseCon.mouse_mode_control()
                 MouseCon.update_position(signals)
+                left_click(signals)
 
     except KeyboardInterrupt:
         print("Acquisition stopped by user.")
